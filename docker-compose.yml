@@ -1,0 +1,68 @@
+version: '3'
+
+services:
+  ng-web:
+    container_name: ng-web
+    image: nginx:stable
+    ports:
+      - "7000:80"
+    links:
+      - php-envo
+      - mysql-dbo
+    volumes:
+      - ./src:/var/www/html
+      - ./site.conf:/etc/nginx/conf.d/default.conf
+    mem_limit: 2G
+
+  php-envo:
+    container_name: php-envo
+    build: ./php
+    volumes:
+      - ./src:/var/www/html
+    links: 
+      - mysql-dbo
+    ports:
+      - 7001:80
+    networks:
+      - default
+  
+  mysql-dbo:
+    container_name: mysql-dbo
+    image: mysql:5.7.30
+    command: --default-authentication-plugin=mysql_native_password
+    restart: always
+    volumes:
+      - ./mydb:/var/lib/mysql
+    environment:
+      MYSQL_HOST: mysql-dbo
+      MYSQL_ROOT_PASSWORD: $ROOT_PWD
+      MYSQL_DATABASE: $DEV_DB
+      MYSQL_USER: $DEV_USER
+      MYSQL_PASSWORD: $DEV_PWD
+    networks:
+      - default
+
+  
+  pma_admino:
+    container_name: pma_admino
+    image: phpmyadmin/phpmyadmin
+    restart: always
+    links: 
+      - mysql-dbo:mydb
+    ports:
+      - 7002:80
+    environment:
+      PMA_ARBITRARY: 1
+      MYSQL_DATABASE: $DEV_DB
+      MYSQL_USER: $DEV_USER
+      MYSQL_PASSWORD: $DEV_PWD
+      UPLOAD_LIMIT: 200M
+    networks:
+      - default
+
+volumes:
+  src:
+  mydb:
+
+networks:
+  default:
